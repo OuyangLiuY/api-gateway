@@ -1,0 +1,226 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: api-gateway
+
+# 限流配置 - 基于系统最高QPS 100优化
+gateway:
+  rate-limit:
+    enabled: true
+    # 全局默认限流配置 - 作为兜底保护
+    default-qps: 80
+    default-burst: 120
+    
+    # IP限流配置 - 防止单个IP攻击，保护系统整体
+    ip-limit-enabled: true
+    ip-qps: 30          # 单个IP每秒最多30个请求
+    ip-burst: 50        # 突发流量允许50个请求
+    
+    # 用户限流配置 - 防止单个用户过度使用
+    user-limit-enabled: true
+    user-qps: 20        # 单个用户每秒最多20个请求
+    user-burst: 35      # 突发流量允许35个请求
+    
+    # URL路径限流配置 - 防止热点API被过度调用
+    url-limit-enabled: true
+    url-qps: 40         # 单个URL每秒最多40个请求
+    url-burst: 60       # 突发流量允许60个请求
+    
+    # API权重限流配置 - 根据业务重要性分配资源
+    api-weight-limit-enabled: true
+    api-weights:
+      CORE:             # 核心API：支付、转账等关键业务
+        qps: 60         # 占用60%的系统资源
+        burst: 80
+        weight: 1.0
+      NORMAL:           # 普通API：一般业务查询
+        qps: 25         # 占用25%的系统资源
+        burst: 35
+        weight: 0.4
+      NON_CORE:         # 非核心API：统计、报表等
+        qps: 10         # 占用10%的系统资源
+        burst: 15
+        weight: 0.2
+      CRYPTO:           # 加解密API：特殊处理
+        qps: 15         # 占用15%的系统资源
+        burst: 20
+        weight: 0.3
+
+  # 熔断器配置
+  circuit-breaker:
+    enabled: true
+    instances:
+      coreApi:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 5s
+        failure-rate-threshold: 50.0
+        slow-call-duration-threshold: 2s
+        slow-call-rate-threshold: 50.0
+      normalApi:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        permitted-number-of-calls-in-half-open-state: 5
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 30.0
+        slow-call-duration-threshold: 5s
+        slow-call-rate-threshold: 30.0
+      nonCoreApi:
+        sliding-window-size: 30
+        minimum-number-of-calls: 15
+        permitted-number-of-calls-in-half-open-state: 8
+        wait-duration-in-open-state: 15s
+        failure-rate-threshold: 20.0
+        slow-call-duration-threshold: 10s
+        slow-call-rate-threshold: 20.0
+      cryptoApi:
+        sliding-window-size: 15
+        minimum-number-of-calls: 8
+        permitted-number-of-calls-in-half-open-state: 4
+        wait-duration-in-open-state: 8s
+        failure-rate-threshold: 40.0
+        slow-call-duration-threshold: 3s
+        slow-call-rate-threshold: 40.0
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      coreApiCircuitBreaker:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 5s
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 50
+        slow-call-duration-threshold: 2s
+        event-consumer-buffer-size: 10
+      normalApiCircuitBreaker:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        permitted-number-of-calls-in-half-open-state: 5
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 30
+        slow-call-rate-threshold: 30
+        slow-call-duration-threshold: 5s
+        event-consumer-buffer-size: 10
+      nonCoreApiCircuitBreaker:
+        sliding-window-size: 30
+        minimum-number-of-calls: 15
+        permitted-number-of-calls-in-half-open-state: 8
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 15s
+        failure-rate-threshold: 20
+        slow-call-rate-threshold: 20
+        slow-call-duration-threshold: 10s
+        event-consumer-buffer-size: 10
+      cryptoApiCircuitBreaker:
+        sliding-window-size: 15
+        minimum-number-of-calls: 8
+        permitted-number-of-calls-in-half-open-state: 4
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 8s
+        failure-rate-threshold: 40
+        slow-call-rate-threshold: 40
+        slow-call-duration-threshold: 3s
+        event-consumer-buffer-size: 10
+        record-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.client.ResourceAccessException
+          - java.security.GeneralSecurityException
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,circuitbreakers,ratelimiters
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# SpringDoc OpenAPI配置
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+
+# WebSocket配置
+websocket:
+  enabled: true
+  max-frame-size: 65536
+  max-message-size: 65536
+
+# API版本管理配置
+api-version:
+  enabled: true
+  default-version: v2
+  supported-versions: v1,v2,v3
+  compatibility:
+    v1: v1
+    v2: v1,v2
+    v3: v2,v3
+
+# 协议适配配置
+protocol-adapter:
+  enabled: true
+  soap-to-rest:
+    enabled: true
+    mapping-file: config/soap-mapping.yml
+  xml-to-json:
+    enabled: true
+  json-to-xml:
+    enabled: true
+  http-to-https:
+    enabled: true
+    secure-paths: /api/gateway/payment/**,/api/gateway/transfer/**,/api/admin/**
+
+# Logging configuration
+logging:
+  level:
+    com.citi.tts.api.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: DEBUG
+    io.github.resilience4j: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/api-gateway.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+
+audit:
+  async:
+    enabled: true          # 是否启用异步模式
+    batch-size: 100        # 批次大小
+    flush-interval: 5000   # 刷新间隔（毫秒）
+    queue-size: 10000      # 队列大小
+    queue-timeout: 100     # 队列超时时间（毫秒）
+    worker-threads: 1      # 工作线程数
+  storage:
+    type: file             # 存储类型：file, database, elasticsearch, kafka
+    file:
+      path: logs/audit.log # 日志文件路径
+      rotation-enabled: true
+      max-file-size: 100   # 单个文件最大大小（MB）
+      max-files: 10        # 保留文件数量

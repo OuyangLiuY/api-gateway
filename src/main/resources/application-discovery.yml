@@ -1,0 +1,229 @@
+# 服务发现配置
+spring:
+  cloud:
+    discovery:
+      enabled: true
+      type: simple  # simple, eureka, consul, nacos, zookeeper
+      
+      # 服务注册配置
+      registration:
+        enabled: true
+        interval: 30000
+        timeout: 5000
+        metadata:
+          version: "1.0.0"
+          zone: "default"
+          weight: "1"
+          secure: "false"
+        tags:
+          environment: "production"
+          team: "gateway"
+      
+      # 服务发现配置
+      discovery:
+        enabled: true
+        interval: 30000
+        cache-expiration: 60000
+        cache-enabled: true
+      
+      # 健康检查配置
+      health-check:
+        enabled: true
+        interval: 30000
+        timeout: 5000
+        path: "/actuator/health"
+        failure-threshold: 3
+        success-threshold: 1
+
+# Eureka配置
+eureka:
+  client:
+    enabled: false
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: false
+    fetch-registry: true
+    registry-fetch-interval-seconds: 30
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    health-check-url-path: /actuator/health
+    metadata-map:
+      weight: 1
+      zone: default
+
+# Consul配置
+spring:
+  cloud:
+    consul:
+      enabled: false
+      host: localhost
+      port: 8500
+      discovery:
+        enabled: false
+        service-name: api-gateway
+        service-id: ${spring.application.name}:${server.port}
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        health-check-timeout: 5s
+        tags:
+          - environment=production
+          - team=gateway
+
+# Nacos配置
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        server-addr: localhost:8848
+        namespace: ""
+        group: DEFAULT_GROUP
+        service-name: api-gateway
+        cluster-name: DEFAULT
+        weight: 1.0
+        health-check-enabled: true
+        health-check-path: /actuator/health
+        health-check-interval: 5000
+        health-check-timeout: 3000
+
+# Zookeeper配置
+spring:
+  cloud:
+    zookeeper:
+      enabled: false
+      connect-string: localhost:2181
+      discovery:
+        enabled: false
+        service-name: api-gateway
+        root: /services
+        session-timeout: 60000
+        connection-timeout: 15000
+
+# 简单服务发现配置（用于开发和测试）
+spring:
+  cloud:
+    discovery:
+      client:
+        simple:
+          instances:
+            # 支付服务
+            payment-service:
+              - uri: http://localhost:8081
+                metadata:
+                  weight: 2
+                  zone: zone-a
+                  version: "1.0.0"
+                  secure: "false"
+              - uri: http://localhost:8082
+                metadata:
+                  weight: 1
+                  zone: zone-b
+                  version: "1.0.0"
+                  secure: "false"
+            
+            # 用户服务
+            user-service:
+              - uri: http://localhost:8083
+                metadata:
+                  weight: 1
+                  zone: zone-a
+                  version: "1.0.0"
+                  secure: "false"
+              - uri: http://localhost:8084
+                metadata:
+                  weight: 1
+                  zone: zone-b
+                  version: "1.0.0"
+                  secure: "false"
+            
+            # 账户服务
+            account-service:
+              - uri: http://localhost:8085
+                metadata:
+                  weight: 2
+                  zone: zone-a
+                  version: "1.0.0"
+                  secure: "false"
+              - uri: http://localhost:8086
+                metadata:
+                  weight: 1
+                  zone: zone-b
+                  version: "1.0.0"
+                  secure: "false"
+            
+            # 转账服务
+            transfer-service:
+              - uri: http://localhost:8087
+                metadata:
+                  weight: 2
+                  zone: zone-a
+                  version: "1.0.0"
+                  secure: "false"
+              - uri: http://localhost:8088
+                metadata:
+                  weight: 1
+                  zone: zone-b
+                  version: "1.0.0"
+                  secure: "false"
+            
+            # 查询服务
+            query-service:
+              - uri: http://localhost:8089
+                metadata:
+                  weight: 1
+                  zone: zone-a
+                  version: "1.0.0"
+                  secure: "false"
+              - uri: http://localhost:8090
+                metadata:
+                  weight: 1
+                  zone: zone-b
+                  version: "1.0.0"
+                  secure: "false"
+            
+            # 统计服务
+            statistics-service:
+              - uri: http://localhost:8091
+                metadata:
+                  weight: 1
+                  zone: zone-a
+                  version: "1.0.0"
+                  secure: "false"
+              - uri: http://localhost:8092
+                metadata:
+                  weight: 1
+                  zone: zone-b
+                  version: "1.0.0"
+                  secure: "false"
+
+# 服务发现监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,discovery
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 日志配置
+logging:
+  level:
+    com.citi.tts.api.gateway.discovery: DEBUG
+    org.springframework.cloud.discovery: DEBUG
+    org.springframework.cloud.client.discovery: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/service-discovery.log
+    max-size: 100MB
+    max-history: 30 

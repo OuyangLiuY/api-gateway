@@ -1,0 +1,4 @@
+2025-06-29 10:33:33 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-06-29 10:33:33 [netty-shutdown] DEBUG r.netty.transport.ServerTransport - [7e4afe1c, L:/[0:0:0:0:0:0:0:0]:8080] Server is about to be disposed with timeout: PT2562047H47M16.854775807S
+2025-06-29 10:33:33 [netty-shutdown] INFO  o.s.b.w.e.netty.GracefulShutdown - Graceful shutdown complete
+2025-06-29 10:33:33 [SpringApplicationShutdownHook] DEBUG r.netty.transport.ServerTransport - [7e4afe1c, L:/[0:0:0:0:0:0:0:0]:8080] Server has been disposed

@@ -1,0 +1,74 @@
+### 测试支付服务降级 - 包含完整请求参数
+POST http://localhost:8080/api/payment/process
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+X-User-ID: user123
+X-Request-ID: req-12345
+X-Correlation-ID: corr-67890
+
+{
+  "amount": 100.00,
+  "currency": "USD",
+  "merchantId": "merchant123",
+  "orderId": "order-456",
+  "description": "测试支付订单"
+}
+
+### 测试用户服务降级 - 包含查询参数
+GET http://localhost:8080/api/user/profile?userId=user123&version=v1&source=mobile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+X-User-ID: user123
+X-Request-ID: req-67890
+
+### 测试订单服务降级 - 包含复杂请求体
+POST http://localhost:8080/api/order/create
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+X-User-ID: user123
+X-Request-ID: req-11111
+
+{
+  "orderId": "order-789",
+  "items": [
+    {
+      "productId": "prod-001",
+      "quantity": 2,
+      "price": 50.00
+    },
+    {
+      "productId": "prod-002", 
+      "quantity": 1,
+      "price": 30.00
+    }
+  ],
+  "shippingAddress": {
+    "street": "123 Main St",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001"
+  },
+  "paymentMethod": {
+    "type": "credit_card",
+    "cardNumber": "****-****-****-1234"
+  }
+}
+
+### 测试查询服务降级 - 简单GET请求
+GET http://localhost:8080/api/query/balance?accountId=acc-123&currency=USD
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+X-User-ID: user123
+X-Request-ID: req-22222
+
+### 测试统计服务降级 - 无认证请求
+GET http://localhost:8080/api/statistics/daily?date=2024-01-15&type=revenue
+X-Request-ID: req-33333
+
+### 测试通用降级
+GET http://localhost:8080/api/unknown/service
+Content-Type: application/json
+X-User-ID: user123
+X-Request-ID: req-44444
+
+{
+  "test": "data"
+} 

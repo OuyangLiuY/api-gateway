@@ -1,0 +1,68 @@
+# 链路追踪配置
+tracing:
+  # 采样配置
+  sampling:
+    enabled: true                    # 是否启用采样
+    rate: 1.0                       # 采样率 (0.0-1.0)
+    max-spans-per-trace: 100        # 每个追踪的最大跨度数
+  
+  # 报告器配置
+  reporter:
+    enabled: false                  # 是否启用外部报告
+    endpoint: http://localhost:14268/api/traces  # Jaeger收集器端点
+    batch-size: 100                 # 批次大小
+    flush-interval: 5000            # 刷新间隔（毫秒）
+    timeout: 3000                   # 超时时间（毫秒）
+  
+  # 清理配置
+  cleanup:
+    interval: 300000                # 清理间隔（毫秒）
+    max-age: 600000                 # 最大保留时间（毫秒）
+  
+  # 统计配置
+  stats:
+    interval: 60000                 # 统计记录间隔（毫秒）
+  
+  # 健康检查配置
+  health:
+    interval: 30000                 # 健康检查间隔（毫秒）
+
+# 日志配置 - 追踪相关
+logging:
+  level:
+    com.citi.tts.api.gateway.tracing: DEBUG
+    org.springframework.cloud.gateway.filter.TraceFilter: DEBUG
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,trace
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# 网关路由配置 - 追踪相关
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - TraceFilter
+      routes:
+        # 追踪管理API路由
+        - id: trace-api
+          uri: http://localhost:8080
+          predicates:
+            - Path=/api/trace/**
+          filters:
+            - StripPrefix=0
+            - name: TraceFilter
+              args:
+                enabled: true 

@@ -1,0 +1,214 @@
+# 动态路由配置
+gateway:
+  dynamic-route:
+    # 存储类型：memory, file
+    storage-type: memory
+    
+    # 文件配置
+    file:
+      path: config/routes.yml
+      auto-reload: true
+      reload-interval-ms: 5000
+    
+    # 缓存配置
+    cache:
+      max-size: 1000
+      expire-seconds: 300
+      enable-stats: true
+    
+    # 监控配置
+    monitor:
+      enable-metrics: true
+      stats-interval-ms: 60000
+      enable-health-check: true
+      health-check-interval-ms: 30000
+
+# 动态路由示例配置
+spring:
+  cloud:
+    gateway:
+      # 动态路由配置
+      routes:
+        # 支付服务动态路由
+        - id: payment-dynamic-route
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payment/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+            - name: CircuitBreaker
+              args:
+                name: payment-circuit-breaker
+                fallbackUri: forward:/fallback/payment
+          metadata:
+            service-level: CORE
+            weight: 100
+            load-balancer-strategy: WEIGHTED_ROUND_ROBIN
+            timeout: 5000
+            retry-count: 3
+            circuit-breaker-enabled: true
+            rate-limit-enabled: true
+            qps: 100
+            fallback-uri: forward:/fallback/payment
+
+        # 用户服务动态路由
+        - id: user-dynamic-route
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 80
+                redis-rate-limiter.burstCapacity: 160
+            - name: CircuitBreaker
+              args:
+                name: user-circuit-breaker
+                fallbackUri: forward:/fallback/user
+          metadata:
+            service-level: IMPORTANT
+            weight: 80
+            load-balancer-strategy: LEAST_CONNECTIONS
+            timeout: 3000
+            retry-count: 2
+            circuit-breaker-enabled: true
+            rate-limit-enabled: true
+            qps: 80
+            fallback-uri: forward:/fallback/user
+
+        # 查询服务动态路由
+        - id: query-dynamic-route
+          uri: lb://query-service
+          predicates:
+            - Path=/api/query/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+            - name: CircuitBreaker
+              args:
+                name: query-circuit-breaker
+                fallbackUri: forward:/fallback/query
+          metadata:
+            service-level: NORMAL
+            weight: 50
+            load-balancer-strategy: ROUND_ROBIN
+            timeout: 2000
+            retry-count: 1
+            circuit-breaker-enabled: true
+            rate-limit-enabled: true
+            qps: 50
+            fallback-uri: forward:/fallback/query
+
+        # 统计服务动态路由
+        - id: statistics-dynamic-route
+          uri: lb://statistics-service
+          predicates:
+            - Path=/api/statistics/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+            - name: CircuitBreaker
+              args:
+                name: statistics-circuit-breaker
+                fallbackUri: forward:/fallback/statistics
+          metadata:
+            service-level: NON_CORE
+            weight: 20
+            load-balancer-strategy: RANDOM
+            timeout: 1000
+            retry-count: 0
+            circuit-breaker-enabled: false
+            rate-limit-enabled: true
+            qps: 20
+            fallback-uri: forward:/fallback/statistics
+
+# 负载均衡配置
+ribbon:
+  # 连接超时时间
+  ConnectTimeout: 2000
+  # 读取超时时间
+  ReadTimeout: 5000
+  # 重试次数
+  MaxAutoRetries: 1
+  # 重试次数（不包括第一次）
+  MaxAutoRetriesNextServer: 1
+  # 是否所有操作都重试
+  OkToRetryOnAllOperations: false
+
+# 熔断器配置
+resilience4j:
+  circuitbreaker:
+    instances:
+      payment-circuit-breaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+      user-circuit-breaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+      query-circuit-breaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+      statistics-circuit-breaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+
+# 限流配置
+spring:
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 日志配置
+logging:
+  level:
+    com.citi.tts.api.gateway.routes: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/dynamic-route.log
+    max-size: 100MB
+    max-history: 7 

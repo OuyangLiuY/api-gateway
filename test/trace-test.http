@@ -1,0 +1,62 @@
+### 测试链路追踪 - 基本请求
+GET http://localhost:8080/api/users
+X-Trace-ID: test-trace-123456
+X-Request-ID: test-req-123456
+X-Correlation-ID: test-corr-123456
+X-User-ID: test-user-123
+X-Tenant-ID: test-tenant-001
+
+### 测试链路追踪 - 带查询参数
+GET http://localhost:8080/api/users?page=1&size=10
+X-Trace-ID: test-trace-789012
+X-Request-ID: test-req-789012
+X-Correlation-ID: test-corr-789012
+X-User-ID: test-user-456
+X-Tenant-ID: test-tenant-002
+
+### 测试链路追踪 - POST请求
+POST http://localhost:8080/api/users
+Content-Type: application/json
+X-Trace-ID: test-trace-345678
+X-Request-ID: test-req-345678
+X-Correlation-ID: test-corr-345678
+X-User-ID: test-user-789
+X-Tenant-ID: test-tenant-003
+
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "age": 30
+}
+
+### 测试链路追踪 - 错误请求
+GET http://localhost:8080/api/nonexistent
+X-Trace-ID: test-trace-901234
+X-Request-ID: test-req-901234
+X-Correlation-ID: test-corr-901234
+X-User-ID: test-user-012
+X-Tenant-ID: test-tenant-004
+
+### 获取追踪统计信息
+GET http://localhost:8080/api/trace/stats
+
+### 获取追踪健康状态
+GET http://localhost:8080/api/trace/health
+
+### 设置采样率为50%
+POST http://localhost:8080/api/trace/sampling/rate?rate=0.5
+
+### 启用采样
+POST http://localhost:8080/api/trace/sampling/enabled?enabled=true
+
+### 强制采样指定追踪
+POST http://localhost:8080/api/trace/test-trace-123456/force-sample
+
+### 清理过期追踪
+POST http://localhost:8080/api/trace/cleanup?maxAgeMs=300000
+
+### 手动刷新追踪报告
+POST http://localhost:8080/api/trace/reporter/flush
+
+### 获取活跃追踪列表
+GET http://localhost:8080/api/trace/active?limit=10&offset=0 

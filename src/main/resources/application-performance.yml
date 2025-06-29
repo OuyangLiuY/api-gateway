@@ -1,0 +1,255 @@
+# 性能优化配置
+gateway:
+  # WebClient配置 - 2核CPU优化
+  webclient:
+    max-connections: 52          # 总连接数：25+15+8+4=52
+    acquire-timeout: 3000        # 获取连接超时时间(ms)
+    connect-timeout: 2000        # 连接建立超时时间(ms)
+    read-timeout: 5000           # 读取超时时间(ms)
+    write-timeout: 3000          # 写入超时时间(ms)
+    keep-alive: true             # 启用连接复用
+    max-idle-time: 30000         # 最大空闲时间(ms)
+
+  # 连接池配置 - 分级优化
+  connection-pool:
+    core-service:
+      max-connections: 25        # 核心服务：40 QPS × 200ms / 1000 × 0.3 = 24 → 25
+      max-idle-connections: 8    # 空闲连接：25 × 0.32 = 8
+      connect-timeout: 1500      # 快速连接
+      read-timeout: 3000         # 快速响应
+      write-timeout: 2000        # 快速写入
+    important-service:
+      max-connections: 15        # 重要服务：30 QPS × 150ms / 1000 × 0.3 = 13.5 → 15
+      max-idle-connections: 5    # 空闲连接：15 × 0.33 = 5
+      connect-timeout: 2000      # 标准连接
+      read-timeout: 4000         # 标准响应
+      write-timeout: 2500        # 标准写入
+    normal-service:
+      max-connections: 8         # 普通服务：20 QPS × 100ms / 1000 × 0.3 = 6 → 8
+      max-idle-connections: 3    # 空闲连接：8 × 0.375 = 3
+      connect-timeout: 2500      # 宽松连接
+      read-timeout: 5000         # 宽松响应
+      write-timeout: 3000        # 宽松写入
+    non-core-service:
+      max-connections: 4         # 非核心服务：10 QPS × 80ms / 1000 × 0.3 = 2.4 → 4
+      max-idle-connections: 2    # 空闲连接：4 × 0.5 = 2
+      connect-timeout: 3000      # 最宽松连接
+      read-timeout: 8000         # 最宽松响应
+      write-timeout: 4000        # 最宽松写入
+
+# 缓存配置 - 2核CPU优化
+cache:
+  local:
+    max-size: 5000              # 减少本地缓存大小，适应2核CPU
+    expire-after-write: 300     # 5分钟过期
+  redis:
+    expire-after-write: 1800    # 30分钟过期
+    default-ttl: 3600           # 1小时默认TTL
+
+# 线程池优化配置 - 2核CPU优化
+thread-pool:
+  core-api:
+    core-size: 8                # 2核CPU × 4 = 8
+    max-size: 16                # 2核CPU × 8 = 16
+    queue-size: 50              # 减少队列大小
+    keep-alive: 60              # 60秒保活
+  normal-api:
+    core-size: 4                # 2核CPU × 2 = 4
+    max-size: 8                 # 2核CPU × 4 = 8
+    queue-size: 25              # 减少队列大小
+    keep-alive: 60              # 60秒保活
+  crypto:
+    core-size: 2                # 2核CPU × 1 = 2
+    max-size: 4                 # 2核CPU × 2 = 4
+    queue-size: 100             # 加解密任务队列较大
+    keep-alive: 60              # 60秒保活
+
+# JVM优化配置 - 2核CPU优化
+jvm:
+  # GC配置
+  gc:
+    type: G1GC
+    max-gc-pause-time: 200      # 最大GC暂停时间200ms
+    heap-region-size: 8         # 减少堆区域大小
+    g1-new-size-percent: 25     # 减少新生代比例
+    g1-max-new-size-percent: 50 # 减少最大新生代比例
+  
+  # 内存配置 - 2核CPU优化
+  memory:
+    initial-heap-size: 512m     # 减少初始堆大小
+    max-heap-size: 1g           # 减少最大堆大小
+    metaspace-size: 128m        # 减少元空间大小
+    max-metaspace-size: 256m    # 减少最大元空间大小
+
+# Netty优化配置 - 2核CPU优化
+netty:
+  io-worker-count: 2            # 2核CPU，使用2个IO工作线程
+  pool:
+    max-connections: 52         # 与WebClient总连接数一致
+    acquire-timeout: 3000       # 3秒获取超时
+  http:
+    max-initial-line-length: 4096
+    max-header-size: 8192
+    max-chunk-size: 8192
+
+# 性能监控配置
+management:
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+
+# 日志性能配置 - 2核CPU优化
+logging:
+  level:
+    root: INFO
+    com.citi.tts.api.gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/api-gateway.log
+    max-size: 100MB             # 减少日志文件大小
+    max-history: 7              # 保留7天日志
+
+# 限流配置 - 2核CPU优化
+rate-limit:
+  enabled: true
+  redis:
+    enabled: true
+    fallback-to-local: true
+  ip-limit:
+    qps: 30                     # IP限流：30 QPS
+    burst: 50                   # 突发流量：50
+    window-size: 1              # 1秒窗口
+  user-limit:
+    qps: 20                     # 用户限流：20 QPS
+    burst: 35                   # 突发流量：35
+    window-size: 1              # 1秒窗口
+  url-limit:
+    qps: 40                     # URL限流：40 QPS
+    burst: 60                   # 突发流量：60
+    window-size: 1              # 1秒窗口
+  api-weights:
+    CORE:
+      qps: 40                   # 核心服务：40 QPS
+      burst: 50                 # 突发流量：50
+      refill-interval: 1000     # 1秒补充间隔
+    IMPORTANT:
+      qps: 30                   # 重要服务：30 QPS
+      burst: 40                 # 突发流量：40
+      refill-interval: 1000     # 1秒补充间隔
+    NORMAL:
+      qps: 20                   # 普通服务：20 QPS
+      burst: 25                 # 突发流量：25
+      refill-interval: 1000     # 1秒补充间隔
+    NON_CORE:
+      qps: 10                   # 非核心服务：10 QPS
+      burst: 15                 # 突发流量：15
+      refill-interval: 1000     # 1秒补充间隔
+
+# 熔断器配置 - 2核CPU优化
+resilience4j:
+  circuitbreaker:
+    instances:
+      coreApiCircuitBreaker:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 5s
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 50
+        slow-call-duration-threshold: 2s
+        event-consumer-buffer-size: 10
+      normalApiCircuitBreaker:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        permitted-number-of-calls-in-half-open-state: 5
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 30
+        slow-call-rate-threshold: 30
+        slow-call-duration-threshold: 5s
+        event-consumer-buffer-size: 10
+      nonCoreApiCircuitBreaker:
+        sliding-window-size: 30
+        minimum-number-of-calls: 15
+        permitted-number-of-calls-in-half-open-state: 8
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 15s
+        failure-rate-threshold: 20
+        slow-call-rate-threshold: 20
+        slow-call-duration-threshold: 10s
+        event-consumer-buffer-size: 10
+      cryptoApiCircuitBreaker:
+        sliding-window-size: 15
+        minimum-number-of-calls: 8
+        permitted-number-of-calls-in-half-open-state: 4
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 8s
+        failure-rate-threshold: 40
+        slow-call-rate-threshold: 40
+        slow-call-duration-threshold: 3s
+        event-consumer-buffer-size: 10
+        record-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.client.ResourceAccessException
+          - java.security.GeneralSecurityException
+
+# 异步处理配置 - 2核CPU优化
+async:
+  audit:
+    batch-size: 50              # 减少批处理大小
+    flush-interval: 3000        # 减少刷新间隔
+    queue-size: 5000            # 减少队列大小
+    enabled: true
+  processing:
+    core-threads: 2             # 2核CPU，使用2个核心线程
+    max-threads: 4              # 最大4个线程
+    queue-size: 100             # 减少队列大小
+    keep-alive: 60              # 60秒保活
+
+# 服务降级配置 - 2核CPU优化
+service-degradation:
+  # 缓存配置
+  cache:
+    redis-ttl: 3600
+    local-ttl: 1800
+    local-max-size: 5000        # 减少本地缓存大小
+  
+  # 策略配置
+  strategy:
+    core:
+      backup-service-enabled: true
+      local-computation-enabled: true
+      async-processing-enabled: true
+      timeout: 3000             # 减少超时时间
+    important:
+      backup-service-enabled: true
+      local-computation-enabled: false
+      async-processing-enabled: false
+      timeout: 2000             # 减少超时时间
+    normal:
+      backup-service-enabled: false
+      local-computation-enabled: false
+      async-processing-enabled: false
+      timeout: 1500             # 减少超时时间
+    non-core:
+      backup-service-enabled: false
+      local-computation-enabled: false
+      async-processing-enabled: false
+      timeout: 1000             # 减少超时时间 

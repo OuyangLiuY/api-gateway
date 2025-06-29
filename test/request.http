@@ -1,0 +1,10 @@
+
+
+POST http://localhost:8080/api/gateway/payment/process
+Content-Type: application/json
+
+{
+  "aa": "bb"
+}
+
+###

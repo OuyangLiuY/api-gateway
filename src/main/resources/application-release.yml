@@ -1,0 +1,99 @@
+# 发布验证配置
+release-validation:
+  # 发布验证开关
+  enabled: true
+  
+  # 自动步进配置
+  auto-step:
+    enabled: true
+    interval-seconds: 300  # 5分钟
+    step-percent: 10       # 每次步进10%
+    max-steps: 10          # 最大步进次数
+  
+  # 健康检查配置
+  health-check:
+    enabled: true
+    interval-seconds: 600  # 10分钟
+    error-rate-threshold: 0.1  # 错误率阈值10%
+    response-time-threshold: 5000  # 响应时间阈值5秒
+    auto-rollback-threshold: 0.2   # 自动回滚阈值20%
+  
+  # 策略配置
+  strategy:
+    # A/B测试配置
+    ab-test:
+      default-duration: 3600  # 默认持续时间1小时
+      success-criteria: "errorRate < 0.05 && avgResponseTime < 2000"
+    
+    # 灰度发布配置
+    gray-release:
+      default-step-percent: 10
+      default-step-interval: 300
+      success-criteria: "errorRate < 0.02 && avgResponseTime < 1500"
+    
+    # 金丝雀发布配置
+    canary-release:
+      default-duration: 7200  # 默认持续时间2小时
+      success-criteria: "errorRate < 0.01 && avgResponseTime < 1000"
+  
+  # 监控配置
+  monitoring:
+    enabled: true
+    metrics-enabled: true
+    alert-enabled: true
+    
+    # 监控指标
+    metrics:
+      - total-requests
+      - new-version-requests
+      - old-version-requests
+      - new-version-success
+      - old-version-success
+      - new-version-errors
+      - old-version-errors
+      - new-version-avg-response-time
+      - old-version-avg-response-time
+      - new-version-error-rate
+      - old-version-error-rate
+
+# 日志配置 - 发布验证相关
+logging:
+  level:
+    com.citi.tts.api.gateway.release: DEBUG
+    com.citi.tts.api.gateway.filter.ReleaseValidationFilter: DEBUG
+    com.citi.tts.api.gateway.controller.ReleaseValidationController: DEBUG
+    com.citi.tts.api.gateway.config.ReleaseValidationConfig: DEBUG
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,release
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# 网关路由配置 - 发布验证相关
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - ReleaseValidationFilter
+      routes:
+        # 发布验证管理API路由
+        - id: release-validation-api
+          uri: http://localhost:8080
+          predicates:
+            - Path=/api/gateway/release/**
+          filters:
+            - StripPrefix=0
+            - name: ReleaseValidationFilter
+              args:
+                enabled: true 

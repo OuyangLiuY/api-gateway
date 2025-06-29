@@ -1,0 +1,25 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: payment-service-test
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/payment/**
+              filters:
+                - StripPrefix=1
+                - name: Crypto
+
+# 测试环境禁用某些功能
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentCircuitBreaker:
+        enabled: false
+
+logging:
+  level:
+    com.citi.tts.api.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG 

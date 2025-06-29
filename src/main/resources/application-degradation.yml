@@ -1,0 +1,221 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        # 核心交易服务 - 支付服务
+        - id: payment-service-core
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment/**
+          filters:
+            # 限流过滤器
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+            # 熔断器过滤器
+            - name: CircuitBreaker
+              args:
+                name: payment-circuit-breaker
+                fallbackUri: forward:/fallback/payment
+            # 服务降级过滤器 - 核心级别
+            - name: ServiceDegradation
+              args:
+                serviceLevel: CORE
+                serviceName: payment-service
+
+        # 核心交易服务 - 订单服务
+        - id: order-service-core
+          uri: lb://order-service
+          predicates:
+            - Path=/order/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 80
+                redis-rate-limiter.burstCapacity: 160
+            - name: CircuitBreaker
+              args:
+                name: order-circuit-breaker
+                fallbackUri: forward:/fallback/order
+            - name: ServiceDegradation
+              args:
+                serviceLevel: CORE
+                serviceName: order-service
+
+        # 重要业务服务 - 用户服务
+        - id: user-service-important
+          uri: lb://user-service
+          predicates:
+            - Path=/user/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 200
+                redis-rate-limiter.burstCapacity: 400
+            - name: CircuitBreaker
+              args:
+                name: user-circuit-breaker
+                fallbackUri: forward:/fallback/user
+            - name: ServiceDegradation
+              args:
+                serviceLevel: IMPORTANT
+                serviceName: user-service
+
+        # 重要业务服务 - 账户服务
+        - id: account-service-important
+          uri: lb://account-service
+          predicates:
+            - Path=/account/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 150
+                redis-rate-limiter.burstCapacity: 300
+            - name: CircuitBreaker
+              args:
+                name: account-circuit-breaker
+                fallbackUri: forward:/fallback/account
+            - name: ServiceDegradation
+              args:
+                serviceLevel: IMPORTANT
+                serviceName: account-service
+
+        # 普通业务服务 - 查询服务
+        - id: query-service-normal
+          uri: lb://query-service
+          predicates:
+            - Path=/query/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 300
+                redis-rate-limiter.burstCapacity: 600
+            - name: CircuitBreaker
+              args:
+                name: query-circuit-breaker
+                fallbackUri: forward:/fallback/query
+            - name: ServiceDegradation
+              args:
+                serviceLevel: NORMAL
+                serviceName: query-service
+
+        # 普通业务服务 - 报表服务
+        - id: report-service-normal
+          uri: lb://report-service
+          predicates:
+            - Path=/report/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+            - name: CircuitBreaker
+              args:
+                name: report-circuit-breaker
+                fallbackUri: forward:/fallback/report
+            - name: ServiceDegradation
+              args:
+                serviceLevel: NORMAL
+                serviceName: report-service
+
+        # 非核心服务 - 统计服务
+        - id: statistics-service-non-core
+          uri: lb://statistics-service
+          predicates:
+            - Path=/statistics/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+            - name: CircuitBreaker
+              args:
+                name: statistics-circuit-breaker
+                fallbackUri: forward:/fallback/statistics
+            - name: ServiceDegradation
+              args:
+                serviceLevel: NON_CORE
+                serviceName: statistics-service
+
+        # 非核心服务 - 日志服务
+        - id: log-service-non-core
+          uri: lb://log-service
+          predicates:
+            - Path=/log/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 200
+                redis-rate-limiter.burstCapacity: 400
+            - name: CircuitBreaker
+              args:
+                name: log-circuit-breaker
+                fallbackUri: forward:/fallback/log
+            - name: ServiceDegradation
+              args:
+                serviceLevel: NON_CORE
+                serviceName: log-service
+
+      # 全局默认配置
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+
+# 服务降级配置
+service:
+  degradation:
+    # 缓存配置
+    cache:
+      # Redis缓存过期时间（秒）
+      redis-ttl: 3600
+      # 本地缓存过期时间（秒）
+      local-ttl: 1800
+      # 本地缓存最大大小
+      local-max-size: 10000
+    
+    # 降级策略配置
+    strategy:
+      # 核心服务降级配置
+      core:
+        # 启用备用服务
+        backup-service-enabled: true
+        # 启用本地计算
+        local-computation-enabled: true
+        # 启用异步处理
+        async-processing-enabled: true
+        # 降级超时时间（毫秒）
+        timeout: 5000
+      
+      # 重要服务降级配置
+      important:
+        backup-service-enabled: true
+        local-computation-enabled: false
+        async-processing-enabled: false
+        timeout: 3000
+      
+      # 普通服务降级配置
+      normal:
+        backup-service-enabled: false
+        local-computation-enabled: false
+        async-processing-enabled: false
+        timeout: 2000
+      
+      # 非核心服务降级配置
+      non-core:
+        backup-service-enabled: false
+        local-computation-enabled: false
+        async-processing-enabled: false
+        timeout: 1000
+
+# 日志配置
+logging:
+  level:
+    com.citi.tts.api.gateway.filter.ServiceDegradationGatewayFilter: DEBUG
+    com.citi.tts.api.gateway.service.ServiceDegradationService: DEBUG
+    com.citi.tts.api.gateway.service.impl.CoreServiceFallbackHandlerImpl: DEBUG
+    com.citi.tts.api.gateway.service.impl.ImportantServiceFallbackHandlerImpl: DEBUG
+    com.citi.tts.api.gateway.service.impl.NormalServiceFallbackHandlerImpl: DEBUG 
