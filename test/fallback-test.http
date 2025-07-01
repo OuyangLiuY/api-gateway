@@ -71,4 +71,120 @@ X-Request-ID: req-44444
 
 {
   "test": "data"
-} 
+}
+
+### 测试降级服务功能
+
+### 1. 获取队列统计信息
+GET http://localhost:8080/api/v1/queue-rate-limit/stats
+Content-Type: application/json
+
+### 2. 获取降级服务统计信息
+GET http://localhost:8080/api/v1/queue-rate-limit/fallback-stats
+Content-Type: application/json
+
+### 3. 获取队列健康状态
+GET http://localhost:8080/api/v1/queue-rate-limit/health
+Content-Type: application/json
+
+### 4. 测试正常请求（应该正常处理）
+GET http://localhost:8080/api/v1/test/normal
+Content-Type: application/json
+X-Request-Priority: 5
+
+### 5. 测试重要请求（高优先级）
+GET http://localhost:8080/api/v1/important/test
+Content-Type: application/json
+X-Request-Priority: 0
+
+### 6. 测试普通请求（中等优先级）
+GET http://localhost:8080/api/v1/normal/test
+Content-Type: application/json
+X-Request-Priority: 5
+
+### 7. 测试低优先级请求
+GET http://localhost:8080/api/v1/low/test
+Content-Type: application/json
+X-Request-Priority: 9
+
+### 8. 模拟高并发请求（可能触发降级服务）
+# 这个请求可能会被限流并进入队列，如果队列满了会触发降级服务
+GET http://localhost:8080/api/v1/test/high-load
+Content-Type: application/json
+X-Request-Priority: 3
+
+### 9. 获取特定队列状态
+GET http://localhost:8080/api/v1/queue-rate-limit/queue/127.0.0.1:GET:/api/v1/test/normal
+Content-Type: application/json
+
+### 10. 清空特定队列
+DELETE http://localhost:8080/api/v1/queue-rate-limit/queue/127.0.0.1:GET:/api/v1/test/normal
+Content-Type: application/json
+
+### 11. 重置统计信息
+POST http://localhost:8080/api/v1/queue-rate-limit/reset-stats
+Content-Type: application/json
+
+### 12. 测试降级服务响应格式
+# 当队列满了时，应该返回类似这样的响应：
+# {
+#   "code": 503,
+#   "message": "Service temporarily unavailable due to high load. Request queued and fallback service activated.",
+#   "data": null,
+#   "timestamp": 1640995200000,
+#   "queueKey": "127.0.0.1:GET:/api/v1/test/high-load"
+# }
+
+### 13. 压力测试脚本（可选）
+# 使用以下命令进行压力测试，观察降级服务的触发情况：
+# ab -n 1000 -c 100 http://localhost:8080/api/v1/test/high-load
+
+### 14. 监控降级服务指标
+# 观察以下指标的变化：
+# - totalFallbackRequests: 总降级请求数
+# - fallbackRate: 降级率
+# - totalRejectedRequests: 总拒绝请求数
+# - successRate: 成功率
+
+### 15. 配置验证
+# 检查以下配置是否正确：
+# - gateway.queued-rate-limit.enable-fallback: true
+# - gateway.queued-rate-limit.fallback-timeout-ms: 5000
+# - gateway.queued-rate-limit.max-queue-size: 1000
+
+### 16. 测试立即处理队列（新增）
+POST http://localhost:8080/api/v1/queue-rate-limit/queue/127.0.0.1:GET:/api/v1/test/normal/process-immediately
+Content-Type: application/json
+
+### 17. 测试批量处理队列（新增）
+POST http://localhost:8080/api/v1/queue-rate-limit/queue/127.0.0.1:GET:/api/v1/test/normal/process-batch?batchSize=20
+Content-Type: application/json
+
+### 18. 测试自适应处理队列（新增）
+POST http://localhost:8080/api/v1/queue-rate-limit/queue/127.0.0.1:GET:/api/v1/test/normal/process-adaptive
+Content-Type: application/json
+
+### 19. 获取队列处理策略信息（新增）
+GET http://localhost:8080/api/v1/queue-rate-limit/queue/127.0.0.1:GET:/api/v1/test/normal/processing-info
+Content-Type: application/json
+
+### 20. 队列处理机制说明
+# 队列处理触发时机：
+# 1. 定时触发：每100ms自动处理一次（主要机制）
+# 2. 立即触发：手动调用立即处理（高优先级场景）
+# 3. 批量触发：一次性处理多个请求（批量场景）
+# 4. 自适应触发：根据队列负载动态调整（智能处理）
+
+### 21. 处理策略选择指南
+# - 队列大小 < 10：使用定时处理（默认）
+# - 队列大小 10-100：使用批量处理
+# - 队列大小 100-500：使用自适应处理
+# - 队列大小 > 500：使用立即处理
+
+### 22. 监控队列处理效率
+# 观察以下指标：
+# - 队列大小变化趋势
+# - 处理速度（请求/秒）
+# - 等待时间分布
+# - 超时请求数量
+# - 降级服务调用频率 

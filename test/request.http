@@ -2,9 +2,15 @@
 
 POST http://localhost:8080/api/gateway/payment/process
 Content-Type: application/json
+Authorization: Bearer ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKY0lsZ3RVMlZ6YzJsdmJsd2lJam9pZTF3aVkyeHBaVzUwU1dSY0lqcGNJakU0T0RjMU5qWTJNVndpZlNKOS5ad0RQdUU3YXc0SDNEN2tqMnRzSjF6OHcway1XOEV3RUV5T3F0ZVB4bXpN
 
 {
-  "aa": "bb"
+  "uri": "lb://updated-service",
+  "crypto":"encrypted",
+  "metadata": {
+    "service-level": "IMPORTANT",
+    "weight": 80
+  }
 }
 
 ###

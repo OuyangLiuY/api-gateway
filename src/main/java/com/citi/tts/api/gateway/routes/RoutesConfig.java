@@ -37,12 +37,12 @@ public class RoutesConfig {
                                 .rewritePath("/api/gateway/payment/(?<segment>.*)",
                                         "/api/payment/${segment}")
                                 .filter(advancedRateLimitFilter) // 1. 限流过滤器
-//                                .filter(serviceDegradationGatewayFilter.apply(
-//                                    new ServiceDegradationGatewayFilter.Config(
-//                                        ServiceDegradationService.ServiceLevel.CORE,
-//                                        "payment-service"
-//                                    )
-//                                )) // 2. 服务降级过滤器（前置：捕获熔断器异常）
+                                .filter(serviceDegradationGatewayFilter.apply(
+                                    new ServiceDegradationGatewayFilter.Config(
+                                        ServiceDegradationService.ServiceLevel.CORE,
+                                        "payment-service"
+                                    )
+                                )) // 2. 服务降级过滤器（前置：捕获熔断器异常）
                                 .filter(circuitBreakerFilter)    // 3. 熔断器过滤器
                                 .filter(cryptoFilter)           // 4. 加解密过滤器
                         )

@@ -11,7 +11,8 @@ import java.util.Base64;
 public class AES256Util {
     public static String encrypt(String plain, String key) throws Exception {
         // 模拟10ms的CPU密集型耗时操作
-        hastTime(plain,key);
+        hastTime(plain,key,"解");
+        hastTime(plain,key,"解");
         return """
                 {
                   "uri": "lb://updated-service",
@@ -24,20 +25,20 @@ public class AES256Util {
                 """;
     }
 
-    private static void hastTime(String plain,String key){
+    private static void hastTime(String plain,String key,String type) throws Exception {
         long start = System.nanoTime();
         long duration = 10_000_000L; // 10ms in nanoseconds
         long dummy = 0;
         while (System.nanoTime() - start < duration) {
             // 做一些无意义的哈希计算，防止JIT优化
-            dummy ^= (plain.hashCode() * key.hashCode() + System.nanoTime());
+            dummy ^= ((long) plain.hashCode() * key.hashCode() + System.nanoTime());
         }
         // 防止dummy被优化掉
         if (dummy == 42) {
             log.debug("Impossible!");
         }
         long end = System.nanoTime();
-        log.info("加解密模拟耗时：{}ms", (end - start) / 1_000_000);
+        log.info("{} 密模拟耗时：{}ms",type, (end - start) / 1_000_000);
     }
 
     public static String decrypt(String encrypted, String key) throws Exception {
@@ -47,8 +48,8 @@ public class AES256Util {
 //        byte[] decoded = Base64.getDecoder().decode(encrypted);
 //        byte[] decrypted = cipher.doFinal(decoded);
 
-        hastTime(encrypted,key);
-        return new String("""
+        hastTime(encrypted,key,"加密");
+        return """
                 {
                   "uri": "lb://updated-service",
                   "crypto":"decrypted",
@@ -57,6 +58,6 @@ public class AES256Util {
                     "weight": 80
                   }
                 }
-                """);
+                """;
     }
 } 

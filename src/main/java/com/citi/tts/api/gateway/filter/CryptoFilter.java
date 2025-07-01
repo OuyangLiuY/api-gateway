@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,8 +16,6 @@ import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebFilter;
-import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -32,7 +31,7 @@ public class CryptoFilter implements GatewayFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        final String keyId = Optional.of(exchange.getRequest().getHeaders().getFirst("X-AES-Key-Id"))
+        final String keyId = Optional.ofNullable(exchange.getRequest().getHeaders().getFirst("X-AES-Key-Id"))
                 .orElse(UUID.randomUUID().toString());
         final long timeoutMs = 1000;
         log.debug("crupto filter is coming");
@@ -49,7 +48,8 @@ public class CryptoFilter implements GatewayFilter {
                                     .map(plain -> {
                                         byte[] plainBytes = plain.getBytes(StandardCharsets.UTF_8);
                                         log.info("plain test by decrypt = {}",new String(plainBytes));
-                                        return exchange.getResponse().bufferFactory().wrap(plainBytes);
+
+                                        return wrapBytesFromFactory(plainBytes,exchange.getResponse().bufferFactory());
                                     });
                         });
             }
@@ -86,5 +86,10 @@ public class CryptoFilter implements GatewayFilter {
                     DataBuffer buffer = response.bufferFactory().wrap(bytes);
                     return response.writeWith(Mono.just(buffer));
                 });
+    }
+    public static DataBuffer wrapBytesFromFactory(byte[] bytes, DataBufferFactory bufferFactory) {
+        bufferFactory.allocateBuffer(bytes.length);
+        DataBuffer buffer = bufferFactory.wrap(bytes);
+        return (buffer);
     }
 }

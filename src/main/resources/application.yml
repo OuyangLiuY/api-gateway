@@ -229,3 +229,34 @@ audit:
 certificate:
   endpoint:
     url: http://your-certificate-server/api/certs
+
+# 大数据量处理配置
+data-buffer:
+  # 最大内存大小（字节）
+  max-memory-size: 52428800  # 50MB
+  # 默认分块大小（字节）
+  default-chunk-size: 1048576  # 1MB
+  # 是否启用流式处理
+  streaming-enabled: true
+  # 是否启用安全模式（自动截断超大数据）
+  safe-mode-enabled: true
+
+# 限流排队配置
+rate:
+  limit:
+    queue:
+      enabled: true              # 是否启用排队机制
+      max-size: 1000             # 最大队列大小
+      max-wait-time: 30000       # 最大等待时间（毫秒）
+      max-concurrency: 10        # 最大并发处理数
+      enable-priority: true      # 是否启用优先级队列
+
+# 排队限流配置
+gateway:
+  queued-rate-limit:
+    max-queue-size: 1000
+    max-wait-time-ms: 30000
+    max-concurrency: 10
+    enable-priority: true
+    enable-fallback: true  # 启用降级服务
+    fallback-timeout-ms: 5000  # 降级服务超时时间5秒

@@ -1,0 +1,118 @@
+### JWT认证和X-Session头部测试
+
+### 1. 生成测试token
+POST http://localhost:8080/api/v1/test/generate-token?userId=user123&tenantId=tenant-1&role=user
+Content-Type: application/json
+
+### 2. 生成管理员token
+POST http://localhost:8080/api/v1/test/generate-token?userId=admin123&tenantId=tenant-1&role=admin
+Content-Type: application/json
+
+### 3. 测试无token的请求（应该继续处理）
+GET http://localhost:8080/api/v1/test/public
+Content-Type: application/json
+
+### 4. 测试无效token的请求（应该返回401）
+GET http://localhost:8080/api/v1/test/protected
+Content-Type: application/json
+Authorization: Bearer invalid-token
+
+### 5. 测试有效JWT token的请求（应该添加X-Session头部）
+# 使用上面生成的token替换这里的TOKEN_PLACEHOLDER
+GET http://localhost:8080/api/v1/test/protected
+Content-Type: application/json
+Authorization: Bearer TOKEN_PLACEHOLDER
+
+### 6. 测试带租户ID的请求
+GET http://localhost:8080/api/v1/test/protected
+Content-Type: application/json
+Authorization: Bearer TOKEN_PLACEHOLDER
+X-Tenant-ID: tenant-123
+
+### 7. 测试从查询参数获取租户ID
+GET http://localhost:8080/api/v1/test/protected?tenantId=tenant-456
+Content-Type: application/json
+Authorization: Bearer TOKEN_PLACEHOLDER
+
+### 8. 测试从路径获取租户ID
+GET http://localhost:8080/api/v1/test/tenant/tenant-789/users
+Content-Type: application/json
+Authorization: Bearer TOKEN_PLACEHOLDER
+
+### 9. 测试管理员接口
+GET http://localhost:8080/api/v1/test/admin
+Content-Type: application/json
+Authorization: Bearer TOKEN_PLACEHOLDER
+
+### 10. 测试匿名访问
+# 没有Authorization头部的请求应该继续处理
+# 不会添加X-Session头部
+GET http://localhost:8080/api/v1/test/anonymous
+Content-Type: application/json
+
+### 11. 验证token
+POST http://localhost:8080/api/v1/test/validate-token?token=TOKEN_PLACEHOLDER
+Content-Type: application/json
+
+### 12. 验证X-Session头部格式
+# 当JWT验证成功后，请求应该包含以下头部：
+# X-Session: {生成的会话ID}
+# X-User-ID: {用户ID}
+# X-Tenant-ID: {租户ID}
+
+### 13. 测试会话ID生成
+# 会话ID应该基于以下信息生成：
+# - 用户ID (sub claim)
+# - 租户ID (tenantId claim 或从请求中提取)
+# - 时间戳 (iat claim)
+# - UUID随机性
+
+### 14. 测试缓存功能
+# 用户信息应该被缓存到 userInfoCache 中
+# 缓存键格式: "user:{tenantId}:{userId}"
+
+### 15. 测试过滤器顺序
+# JwtAuthenticationFilter 应该在路由过滤器之前执行
+# 顺序: Ordered.HIGHEST_PRECEDENCE + 10
+
+### 16. 测试错误处理
+# 无效token应该返回 401 Unauthorized
+# 异常情况应该记录错误日志
+
+### 17. 测试日志记录
+# 成功认证应该记录调试日志
+# 失败认证应该记录警告日志
+# 异常情况应该记录错误日志
+
+### 18. 完整测试流程示例
+# 1. 生成token
+POST http://localhost:8080/api/v1/test/generate-token?userId=testuser&tenantId=testtenant&role=user
+
+# 2. 使用生成的token访问受保护接口
+GET http://localhost:8080/api/v1/test/protected
+Authorization: Bearer {{generated_token}}
+
+# 3. 验证响应中包含X-Session头部
+# 响应应该包含：
+# {
+#   "message": "This is a protected endpoint",
+#   "session": "uuid-session-id",
+#   "userId": "testuser",
+#   "tenantId": "testtenant"
+# }
+
+### 19. 测试不同租户场景
+# 生成不同租户的token
+POST http://localhost:8080/api/v1/test/generate-token?userId=user1&tenantId=tenant-a&role=user
+POST http://localhost:8080/api/v1/test/generate-token?userId=user2&tenantId=tenant-b&role=user
+
+# 使用不同租户的token访问接口
+GET http://localhost:8080/api/v1/test/protected
+Authorization: Bearer {{tenant_a_token}}
+
+GET http://localhost:8080/api/v1/test/protected
+Authorization: Bearer {{tenant_b_token}}
+
+### 20. 测试会话ID唯一性
+# 相同用户和租户的token应该生成相同的会话ID
+# 不同用户或租户的token应该生成不同的会话ID 
