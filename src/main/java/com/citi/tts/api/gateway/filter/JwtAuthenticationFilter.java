@@ -1,41 +1,28 @@
 package com.citi.tts.api.gateway.filter;
 
 import com.citi.tts.api.gateway.crypto.JwtKeyProvider;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 import java.security.PublicKey;
 
-public class JwtAuthenticationFilter implements WebFilter {
-    private final JwtKeyProvider keyProvider;
 
-    public JwtAuthenticationFilter(JwtKeyProvider keyProvider) {
-        this.keyProvider = keyProvider;
-    }
+@Component
+public class JwtAuthenticationFilter implements GatewayFilter {
 
-    @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        String token = extractJwt(exchange);
-        String kid = extractKid(token);
-        String tenantId = extractTenantId(exchange);
-        PublicKey publicKey = keyProvider.getPublicKey(kid, tenantId);
-        if (publicKey == null) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
-        try {
-            Claims claims = Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(token).getBody();
-            // 可将claims注入上下文
-        } catch (Exception e) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
-        return chain.filter(exchange);
-    }
+    @Autowired
+    @Qualifier("userInfoCache")
+    private LoadingCache<String, Object> userInfoCache;
 
     private String extractJwt(ServerWebExchange exchange) {
         String auth = exchange.getRequest().getHeaders().getFirst("Authorization");
@@ -56,4 +43,24 @@ public class JwtAuthenticationFilter implements WebFilter {
         // ...
         return null;
     }
-} 
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String token = extractJwt(exchange);
+        String kid = extractKid(token);
+        String tenantId = extractTenantId(exchange);
+//        userInfoCache.get();
+//        if (publicKey == null) {
+//            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+//            return exchange.getResponse().setComplete();
+//        }
+        try {
+            Claims claims = Jwts.parserBuilder().setSigningKey("").build().parseClaimsJws(token).getBody();
+            // 可将claims注入上下文
+        } catch (Exception e) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+        return chain.filter(exchange);
+    }
+}

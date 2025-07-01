@@ -97,7 +97,7 @@ public class TraceManager {
         traceContexts.entrySet().removeIf(entry -> {
             TraceContext context = entry.getValue();
             if (context.getStartTime() != null && 
-                now - context.getStartTime().toEpochMilli() > maxAgeMs) {
+                now - context.getStartTime().getTime() > maxAgeMs) {
                 cleanedCount.incrementAndGet();
                 return true;
             }

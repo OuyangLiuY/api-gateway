@@ -28,29 +28,11 @@ public class HttpCertificateLoader implements RemoteCertificateLoader {
     private final WebClient webClient;
 
     /**
-     * 构造函数 - 使用默认WebClient
-     */
-    public HttpCertificateLoader(String endpointUrl) {
-        this.endpointUrl = endpointUrl;
-        this.objectMapper = new ObjectMapper();
-        this.webClient = WebClient.builder().build();
-    }
-
-    /**
-     * 构造函数 - 使用指定的WebClient
-     */
-    public HttpCertificateLoader(String endpointUrl, WebClient webClient) {
-        this.endpointUrl = endpointUrl;
-        this.objectMapper = new ObjectMapper();
-        this.webClient = webClient;
-    }
-
-    /**
-     * 使用Spring注入的WebClient构造函数
+     * 构造函数 - Spring注入endpointUrl、WebClient和ObjectMapper
      */
     @Autowired
     public HttpCertificateLoader(
-            String endpointUrl, 
+            @org.springframework.beans.factory.annotation.Value("${certificate.endpoint.url}") String endpointUrl,
             @Qualifier("normalServiceWebClient") WebClient webClient,
             ObjectMapper objectMapper) {
         this.endpointUrl = endpointUrl;

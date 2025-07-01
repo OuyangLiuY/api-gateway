@@ -7,8 +7,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import org.springframework.beans.factory.annotation.Qualifier;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.time.Duration;
+import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,9 +40,10 @@ public class TraceReporter {
     private long timeoutMs = 3000;
 
     @Autowired
+    @Qualifier("defaultWebClient")
     private WebClient webClient;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private final BlockingQueue<TraceContext> traceQueue = new LinkedBlockingQueue<>(10000);
     private final AtomicLong reportedTraces = new AtomicLong(0);
     private final AtomicLong failedReports = new AtomicLong(0);
@@ -216,8 +220,8 @@ public class TraceReporter {
             private String tenantId;
             private String serviceName;
             private String operationName;
-            private java.time.Instant startTime;
-            private java.time.Instant endTime;
+            private Date startTime;
+            private Date endTime;
             private long durationMs;
             private Integer statusCode;
             private String errorMessage;

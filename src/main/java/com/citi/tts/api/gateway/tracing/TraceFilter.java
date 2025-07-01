@@ -1,10 +1,14 @@
 package com.citi.tts.api.gateway.tracing;
 
+import com.citi.tts.api.gateway.audit.AsyncAuditService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -24,6 +28,9 @@ public class TraceFilter implements GlobalFilter, Ordered {
 
     @Autowired
     private TraceManager traceManager;
+
+    @Autowired
+    private AsyncAuditService asyncAuditService;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -108,10 +115,13 @@ public class TraceFilter implements GlobalFilter, Ordered {
      * 添加追踪头信息到响应
      */
     private void addTraceHeadersToResponse(ServerHttpResponse response, TraceContext traceContext) {
-        Map<String, String> traceHeaders = traceContext.getTraceHeaders();
-        for (Map.Entry<String, String> entry : traceHeaders.entrySet()) {
-            response.getHeaders().add(entry.getKey(), entry.getValue());
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            asyncAuditService.log("trace",mapper.writeValueAsString(traceContext));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
+
     }
 
     /**

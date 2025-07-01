@@ -1,5 +1,6 @@
 package com.citi.tts.api.gateway.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -7,6 +8,8 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -17,16 +20,18 @@ import java.util.stream.Collectors;
  * 请求参数提取工具类
  * 用于从ServerWebExchange中提取完整的请求信息
  */
+@Component
 @Slf4j
 public class RequestExtractor {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /**
      * 提取完整的请求信息
      * 包括headers、query parameters、body等
      */
-    public static Mono<Map<String, Object>> extractRequestInfo(ServerWebExchange exchange) {
+    public  Mono<Map<String, Object>> extractRequestInfo(ServerWebExchange exchange) {
         ServerHttpRequest request = exchange.getRequest();
         Map<String, Object> requestInfo = new HashMap<>();
         
@@ -66,7 +71,7 @@ public class RequestExtractor {
                             
                             // 尝试解析JSON
                             try {
-                                Object jsonBody = objectMapper.readValue(body, Object.class);
+                                Object jsonBody = getJson(body);
                                 requestInfo.put("body", jsonBody);
                             } catch (Exception e) {
                                 // 如果不是JSON，直接存储字符串
@@ -86,11 +91,19 @@ public class RequestExtractor {
                 });
     }
 
+    private Map getJson(String body) {
+        try {
+            return objectMapper.readValue(body, Map.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * 获取客户端IP
      * 支持多种代理环境
      */
-    public static String getClientIp(ServerHttpRequest request) {
+    public  String getClientIp(ServerHttpRequest request) {
         // 优先从X-Forwarded-For获取
         String xForwardedFor = request.getHeaders().getFirst("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
@@ -121,7 +134,7 @@ public class RequestExtractor {
      * 获取用户ID
      * 支持多种用户识别方式
      */
-    public static String getUserId(ServerHttpRequest request) {
+    public  String getUserId(ServerHttpRequest request) {
         // 从请求头获取用户ID
         String userId = request.getHeaders().getFirst("X-User-ID");
         if (userId != null && !userId.isEmpty()) {
@@ -147,7 +160,7 @@ public class RequestExtractor {
      * 从JWT token中提取用户ID
      * 简化实现，实际项目中需要proper JWT解析
      */
-    private static String extractUserIdFromToken(String token) {
+    private  String extractUserIdFromToken(String token) {
         try {
             // 这里应该使用proper JWT解析库
             // 简化实现，实际项目中需要JWT解析
@@ -164,7 +177,7 @@ public class RequestExtractor {
      * 获取请求ID
      * 支持多种请求ID头
      */
-    public static String getRequestId(ServerHttpRequest request) {
+    public  String getRequestId(ServerHttpRequest request) {
         String requestId = request.getHeaders().getFirst("X-Request-ID");
         if (requestId == null) {
             requestId = request.getHeaders().getFirst("X-Correlation-ID");
@@ -178,7 +191,7 @@ public class RequestExtractor {
     /**
      * 提取请求头信息
      */
-    public static Map<String, String> extractHeaders(ServerHttpRequest request) {
+    public  Map<String, String> extractHeaders(ServerHttpRequest request) {
         return request.getHeaders().entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -189,7 +202,7 @@ public class RequestExtractor {
     /**
      * 提取查询参数
      */
-    public static Map<String, String> extractQueryParams(ServerHttpRequest request) {
+    public  Map<String, String> extractQueryParams(ServerHttpRequest request) {
         return request.getQueryParams().entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -200,7 +213,7 @@ public class RequestExtractor {
     /**
      * 提取请求体（字符串形式）
      */
-    public static Mono<String> extractBodyAsString(ServerWebExchange exchange) {
+    public  Mono<String> extractBodyAsString(ServerWebExchange exchange) {
         return DataBufferUtils.join(exchange.getRequest().getBody())
                 .defaultIfEmpty(exchange.getResponse().bufferFactory().wrap(new byte[0]))
                 .map(dataBuffer -> {
@@ -226,7 +239,7 @@ public class RequestExtractor {
     /**
      * 提取请求体（JSON对象形式）
      */
-    public static Mono<Object> extractBodyAsJson(ServerWebExchange exchange) {
+    public  Mono<Object> extractBodyAsJson(ServerWebExchange exchange) {
         return extractBodyAsString(exchange)
                 .map(body -> {
                     if (body != null && !body.isEmpty()) {
@@ -244,7 +257,7 @@ public class RequestExtractor {
     /**
      * 获取基本请求信息（不包含body）
      */
-    public static Map<String, Object> getBasicRequestInfo(ServerHttpRequest request) {
+    public  Map<String, Object> getBasicRequestInfo(ServerHttpRequest request) {
         Map<String, Object> requestInfo = new HashMap<>();
         requestInfo.put("path", request.getPath().value());
         requestInfo.put("method", request.getMethod().name());

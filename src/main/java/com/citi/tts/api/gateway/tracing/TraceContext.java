@@ -7,6 +7,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,10 +47,10 @@ public class TraceContext {
     private String operationName;
     
     // 开始时间
-    private Instant startTime;
+    private Date startTime;
     
     // 结束时间
-    private Instant endTime;
+    private Date endTime;
     
     // 状态码
     private Integer statusCode;
@@ -79,7 +80,7 @@ public class TraceContext {
         TraceContext context = new TraceContext();
         context.setTraceId(generateTraceId());
         context.setSpanId(generateSpanId());
-        context.setStartTime(Instant.now());
+        context.setStartTime(new Date());
         context.setServiceName("api-gateway");
         
         // 从请求中提取信息
@@ -116,7 +117,7 @@ public class TraceContext {
         child.setTenantId(this.tenantId);
         child.setServiceName(this.serviceName);
         child.setOperationName(operationName);
-        child.setStartTime(Instant.now());
+        child.setStartTime(new Date());
         child.setSampled(this.sampled);
         child.setLevel(this.level);
         
@@ -144,7 +145,7 @@ public class TraceContext {
         TraceEvent event = new TraceEvent();
         event.setName(name);
         event.setMessage(message);
-        event.setTimestamp(Instant.now());
+        event.setTimestamp(new Date());
         this.events.add(event);
     }
     
@@ -155,7 +156,7 @@ public class TraceContext {
         TraceEvent event = new TraceEvent();
         event.setName(name);
         event.setMessage(message);
-        event.setTimestamp(Instant.now());
+        event.setTimestamp(new Date());
         event.setTags(eventTags);
         this.events.add(event);
     }
@@ -164,7 +165,7 @@ public class TraceContext {
      * 完成追踪
      */
     public void finish(Integer statusCode, String errorMessage) {
-        this.endTime = Instant.now();
+        this.endTime = new Date();
         this.statusCode = statusCode;
         this.errorMessage = errorMessage;
         
@@ -185,7 +186,7 @@ public class TraceContext {
      */
     public long getDurationMs() {
         if (startTime != null && endTime != null) {
-            return endTime.toEpochMilli() - startTime.toEpochMilli();
+            return endTime.getTime() - startTime.getTime();
         }
         return 0;
     }
@@ -310,7 +311,7 @@ public class TraceContext {
     public static class TraceEvent {
         private String name;
         private String message;
-        private Instant timestamp;
+        private Date timestamp;
         private Map<String, String> tags = new HashMap<>();
     }
 } 

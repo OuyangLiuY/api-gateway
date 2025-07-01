@@ -128,7 +128,7 @@ public class MonitorController {
         statistics.put("triggerCounts", advancedRateLimitFilter.getRateLimitStatistics());
         
         // API权重限流器状态
-        statistics.put("apiWeightLimiters", advancedRateLimitFilter.getApiWeightRateLimitersStatus());
+        statistics.put("apiWeightLimiters", advancedRateLimitFilter.getAdvancedRateLimitersStatus());
         
         // 限流配置信息
         statistics.put("config", Map.of(

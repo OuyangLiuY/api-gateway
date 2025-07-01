@@ -224,3 +224,8 @@ audit:
       rotation-enabled: true
       max-file-size: 100   # 单个文件最大大小（MB）
       max-files: 10        # 保留文件数量
+
+# 证书服务端点配置
+certificate:
+  endpoint:
+    url: http://your-certificate-server/api/certs

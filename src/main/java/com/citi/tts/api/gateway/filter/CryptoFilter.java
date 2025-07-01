@@ -21,6 +21,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -30,7 +32,8 @@ public class CryptoFilter implements GatewayFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        final String keyId = exchange.getRequest().getHeaders().getFirst("X-AES-Key-Id");
+        final String keyId = Optional.of(exchange.getRequest().getHeaders().getFirst("X-AES-Key-Id"))
+                .orElse(UUID.randomUUID().toString());
         final long timeoutMs = 1000;
         log.debug("crupto filter is coming");
         ServerHttpRequestDecorator requestDecorator = new ServerHttpRequestDecorator(exchange.getRequest()) {

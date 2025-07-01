@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerRequest;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -26,9 +24,6 @@ public class AdvancedLoadBalancer {
 
     @Autowired
     private DiscoveryClient discoveryClient;
-
-    @Autowired
-    private LoadBalancerClient loadBalancerClient;
 
     // 服务实例缓存
     private final Map<String, List<ServiceInstance>> serviceInstanceCache = new ConcurrentHashMap<>();

@@ -13,18 +13,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@RestController
+@RestController(value = "thread-monitor")
 public class MonitorController {
 
 
     @Autowired
     ApiRoutingService apiRoutingService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
 
     @GetMapping("/api/thread/monitor")
     public Mono<String> threadMonitor() {
-        ObjectMapper objectMapper = new ObjectMapper();
-
         Map<String, Object> res = new HashMap<>(2);
         res.put("apiStatus", apiRoutingService.getApiStatistics());
         res.put("threadStatus", apiRoutingService.getThreadPoolStatus());

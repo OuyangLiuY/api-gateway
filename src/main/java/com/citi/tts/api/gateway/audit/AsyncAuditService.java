@@ -58,7 +58,7 @@ public class AsyncAuditService implements AuditService {
     });
 
     // 日志队列
-    private final BlockingQueue<AuditLogEntry> logQueue;
+    private BlockingQueue<AuditLogEntry> logQueue;
     
     // 当前批次缓存
     private final AtomicReference<List<AuditLogEntry>> currentBatch = new AtomicReference<>(new ArrayList<>());
@@ -74,11 +74,13 @@ public class AsyncAuditService implements AuditService {
     private final SyncAuditService syncAuditService = new SyncAuditService();
 
     public AsyncAuditService() {
-        this.logQueue = new LinkedBlockingQueue<>(queueSize);
+        // 构造方法不再初始化logQueue，避免@Value注入时为0
     }
 
     @PostConstruct
     public void init() {
+        // 在此处安全初始化logQueue
+        this.logQueue = new LinkedBlockingQueue<>(queueSize > 0 ? queueSize : 10000);
         if (asyncEnabled) {
             // 启动异步处理线程
             asyncExecutor.submit(this::processLogsAsync);

@@ -135,7 +135,7 @@ public class ServiceDegradationGatewayFilter extends AbstractGatewayFilterFactor
                                         serviceName, throwable.getClass().getSimpleName());
                                 return executeServiceDegradation(exchange, serviceName, path, serviceLevel, throwable);
                             } else {
-                                log.info("Not triggering degradation for error type - Service: {}, Error: {}", 
+                                log.error("Not triggering degradation for error type - Service: {}, Error: {}",
                                         serviceName, throwable.getClass().getSimpleName());
                                 // 不触发降级，直接返回错误
                                 return writeErrorResponse(exchange, throwable);

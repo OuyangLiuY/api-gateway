@@ -2,6 +2,8 @@ package com.citi.tts.api.gateway.controller;
 
 import com.citi.tts.api.gateway.util.RequestExtractor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.A;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/fallback")
 public class FallbackController {
+
+    @Autowired
+    private RequestExtractor requestExtractor;
 
     /**
      * 认证服务降级处理
@@ -109,14 +114,14 @@ public class FallbackController {
     private Mono<ResponseEntity<Map<String, Object>>> buildFallbackResponse(
             ServerWebExchange exchange, String serviceName, String errorCode) {
         
-        return RequestExtractor.extractRequestInfo(exchange)
+        return requestExtractor.extractRequestInfo(exchange)
                 .map(requestInfo -> {
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("timestamp", LocalDateTime.now());
-                    response.put("status", "SERVICE_UNAVAILABLE");
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", "SERVICE_UNAVAILABLE");
                     response.put("message", serviceName + "暂时不可用，请稍后重试");
                     response.put("service", serviceName);
-                    response.put("fallback", true);
+        response.put("fallback", true);
                     response.put("code", errorCode);
                     
                     // 添加请求信息

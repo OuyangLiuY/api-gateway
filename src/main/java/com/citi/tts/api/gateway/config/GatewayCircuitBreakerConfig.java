@@ -14,10 +14,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.context.annotation.Primary;
+import org.springframework.boot.convert.DurationUnit;
+import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -30,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 public class GatewayCircuitBreakerConfig {
 
     @Bean
+    @Primary
     @ConfigurationProperties(prefix = "gateway.circuit-breaker")
     public CircuitBreakerProperties circuitBreakerProperties() {
         return new CircuitBreakerProperties();
@@ -209,10 +213,10 @@ public class GatewayCircuitBreakerConfig {
         
         // 熔断器配置
         private Map<String, CircuitBreakerInstanceConfig> instances = Map.of(
-            "coreApi", new CircuitBreakerInstanceConfig(10, 5, 3, 5, 50.0f, 2),
-            "normalApi", new CircuitBreakerInstanceConfig(20, 10, 5, 10, 30.0f, 5),
-            "nonCoreApi", new CircuitBreakerInstanceConfig(30, 15, 8, 15, 20.0f, 10),
-            "cryptoApi", new CircuitBreakerInstanceConfig(15, 8, 4, 8, 40.0f, 3)
+            "coreApi", new CircuitBreakerInstanceConfig(10, 5, 3, Duration.ofSeconds(5), 50.0f, Duration.ofSeconds(2)),
+            "normalApi", new CircuitBreakerInstanceConfig(20, 10, 5, Duration.ofSeconds(10), 30.0f, Duration.ofSeconds(5)),
+            "nonCoreApi", new CircuitBreakerInstanceConfig(30, 15, 8, Duration.ofSeconds(15), 20.0f, Duration.ofSeconds(10)),
+            "cryptoApi", new CircuitBreakerInstanceConfig(15, 8, 4, Duration.ofSeconds(8), 40.0f, Duration.ofSeconds(3))
         );
         
         // 限流器配置
@@ -231,13 +235,15 @@ public class GatewayCircuitBreakerConfig {
         private int slidingWindowSize;
         private int minimumNumberOfCalls;
         private int permittedNumberOfCallsInHalfOpenState;
-        private int waitDurationInOpenState;
+        @DurationUnit(ChronoUnit.MILLIS)
+        private Duration waitDurationInOpenState;
         private float failureRateThreshold;
-        private int slowCallDurationThreshold;
+        @DurationUnit(ChronoUnit.MILLIS)
+        private Duration slowCallDurationThreshold;
 
         public CircuitBreakerInstanceConfig(int slidingWindowSize, int minimumNumberOfCalls,
-                                          int permittedNumberOfCallsInHalfOpenState, int waitDurationInOpenState,
-                                          float failureRateThreshold, int slowCallDurationThreshold) {
+                                          int permittedNumberOfCallsInHalfOpenState, Duration waitDurationInOpenState,
+                                          float failureRateThreshold, Duration slowCallDurationThreshold) {
             this.slidingWindowSize = slidingWindowSize;
             this.minimumNumberOfCalls = minimumNumberOfCalls;
             this.permittedNumberOfCallsInHalfOpenState = permittedNumberOfCallsInHalfOpenState;

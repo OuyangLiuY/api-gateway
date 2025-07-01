@@ -6,6 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 
 import java.time.Duration;
 
@@ -101,6 +106,19 @@ public class CacheConfig {
                 .expireAfterWrite(Duration.ofSeconds(60))
                 .recordStats()
                 .build(key -> null);
+    }
+
+    /**
+     * 分布式缓存 - Reactive RedisTemplate
+     */
+    @Bean
+    public ReactiveRedisTemplate<String, Object> reactiveRedisTemplate(ReactiveRedisConnectionFactory factory) {
+        RedisSerializationContext.RedisSerializationContextBuilder<String, Object> builder =
+            RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
+        RedisSerializationContext<String, Object> context = builder
+            .value(new GenericJackson2JsonRedisSerializer())
+            .build();
+        return new ReactiveRedisTemplate<>(factory, context);
     }
 
     /**

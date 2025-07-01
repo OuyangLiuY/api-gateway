@@ -13,13 +13,16 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class HttpKeyLoader implements RemoteKeyLoader {
     private final String endpointUrl;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public HttpKeyLoader(String endpointUrl) {
+    @Autowired
+    public HttpKeyLoader(String endpointUrl, ObjectMapper objectMapper) {
         this.endpointUrl = endpointUrl;
+        this.objectMapper = objectMapper;
     }
 
     @Override
