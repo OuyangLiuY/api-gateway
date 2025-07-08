@@ -31,8 +31,6 @@ public class JwtAuthenticationFilter implements GatewayFilter, Ordered {
     @Qualifier("userInfoCache")
     private LoadingCache<String, Object> userInfoCache;
 
-    @Autowired
-    private JwtKeyProvider jwtKeyProvider;
 
     private static final String SECRET = "mySuperSecretKeyForJWT1234567890";
     private static final String SESSION_HEADER = "X-Session";
@@ -111,17 +109,13 @@ public class JwtAuthenticationFilter implements GatewayFilter, Ordered {
     private String generateSessionId(Claims claims) {
         String userId = claims.getSubject();
         String tenantId = claims.get("tenantId", String.class);
-        long timestamp = claims.getIssuedAt().getTime();
-        
-        // 生成基于用户信息的会话ID
-        String sessionBase = String.format("%s-%s-%d", 
-            userId != null ? userId : "anonymous",
-            tenantId != null ? tenantId : "default",
-            timestamp
-        );
+//        long timestamp = claims.getIssuedAt().getTime();
+      log.info("generateSessionId claims: {}", claims);
+
+       return claims.get(SESSION_HEADER, String.class);
         
         // 添加随机性
-        return UUID.nameUUIDFromBytes(sessionBase.getBytes(StandardCharsets.UTF_8)).toString();
+//        return UUID.nameUUIDFromBytes(sessionBase.getBytes(StandardCharsets.UTF_8)).toString();
     }
 
     /**
@@ -135,7 +129,7 @@ public class JwtAuthenticationFilter implements GatewayFilter, Ordered {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(key)
                     .build()
-                    .parseClaimsJws(token)
+                    .parseClaimsJws(new String(Base64.getDecoder().decode(token.getBytes())))
                     .getBody();
             
             log.debug("JWT token validated successfully for user: {}", claims.getSubject());
@@ -163,7 +157,7 @@ public class JwtAuthenticationFilter implements GatewayFilter, Ordered {
                 sessionId, userId, tenantId);
         
         return exchange.getRequest().mutate()
-                .header(SESSION_HEADER, sessionId)
+                .header(SESSION_HEADER, claims.toString())
                 .header(USER_ID_HEADER, userId != null ? userId : "anonymous")
                 .header(TENANT_ID_HEADER, tenantId != null ? tenantId : "default")
                 .build();

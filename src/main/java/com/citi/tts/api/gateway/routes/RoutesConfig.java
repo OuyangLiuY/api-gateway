@@ -1,9 +1,6 @@
 package com.citi.tts.api.gateway.routes;
 
-import com.citi.tts.api.gateway.filter.AdvancedRateLimitFilter;
-import com.citi.tts.api.gateway.filter.CircuitBreakerFilter;
-import com.citi.tts.api.gateway.filter.CryptoFilter;
-import com.citi.tts.api.gateway.filter.ServiceDegradationGatewayFilter;
+import com.citi.tts.api.gateway.filter.*;
 import com.citi.tts.api.gateway.service.ServiceDegradationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -27,6 +24,9 @@ public class RoutesConfig {
     @Autowired
     private ServiceDegradationGatewayFilter serviceDegradationGatewayFilter;
 
+    @Autowired
+    JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Bean
     public RouteLocator routes(RouteLocatorBuilder builder) {
         return builder.routes()
@@ -36,6 +36,7 @@ public class RoutesConfig {
                         .filters(f -> f
                                 .rewritePath("/api/gateway/payment/(?<segment>.*)",
                                         "/api/payment/${segment}")
+                                .filter(jwtAuthenticationFilter)
                                 .filter(advancedRateLimitFilter) // 1. 限流过滤器
                                 .filter(serviceDegradationGatewayFilter.apply(
                                     new ServiceDegradationGatewayFilter.Config(

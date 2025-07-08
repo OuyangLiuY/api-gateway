@@ -8,6 +8,13 @@ spring:
 
 # 限流配置 - 基于系统最高QPS 100优化
 gateway:
+  queued-rate-limit: #排队限流
+    max-queue-size: 1000
+    max-wait-time-ms: 30000
+    max-concurrency: 10
+    enable-priority: true
+    enable-fallback: true  # 启用降级服务
+    fallback-timeout-ms: 5000  # 降级服务超时时间5秒
   rate-limit:
     enabled: true
     # 全局默认限流配置 - 作为兜底保护
@@ -251,12 +258,3 @@ rate:
       max-concurrency: 10        # 最大并发处理数
       enable-priority: true      # 是否启用优先级队列
 
-# 排队限流配置
-gateway:
-  queued-rate-limit:
-    max-queue-size: 1000
-    max-wait-time-ms: 30000
-    max-concurrency: 10
-    enable-priority: true
-    enable-fallback: true  # 启用降级服务
-    fallback-timeout-ms: 5000  # 降级服务超时时间5秒

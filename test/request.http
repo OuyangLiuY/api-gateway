@@ -13,4 +13,10 @@ Authorization: Bearer ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKY0lsZ3RVMlZ6YzJsdmJsd2lJam
   }
 }
 
+
+
+### GET request with a header
+GET http://localhost:8081/api/payment/process?payload=text
+Accept: application/json
+
 ###
